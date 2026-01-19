@@ -5,10 +5,10 @@ export default function Navbar() {
     <nav className="bg-blue-600 text-white p-6 shadow-lg">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">Fila Zero</h1>
+          <h1 className="sora-title text-2xl">Fila Zero</h1>
         </div>
         
-        <ul className="flex gap-6">
+        <ul className="inter-text flex gap-6">
           <li>
             <Link to="/" className="hover:text-blue-100 transition">
               Home
