@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import ClientQueue from './pages/ClientQueue';
 import AdminPanel from './pages/AdminPanel';
+import QueueTracking from './pages/QueueTracking';
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/fila" element={<ClientQueue />} />
+        <Route path="/acompanhar/:entryId" element={<QueueTracking />} />
         <Route path="/admin" element={<AdminPanel />} />
       </Routes>
     </Router>
