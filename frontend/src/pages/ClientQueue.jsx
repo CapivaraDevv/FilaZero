@@ -24,7 +24,7 @@ export default function ClientQueue() {
 
     setErrors(newErrors)
 
-    if(newErrors.name || newErrors.phone || newErrors.establishment){
+    if (newErrors.name || newErrors.phone || newErrors.establishment) {
       return;
     }
 
@@ -45,11 +45,21 @@ export default function ClientQueue() {
               </label>
               <input
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value
+
+                  setFormData({ ...formData, name: value })
+
+                  setErrors(prev => ({
+                    ...prev,
+                    name: value.trim() === ''
+                  }))
+                }
+                }
                 type="text"
                 placeholder="Seu nome"
-                className={`w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 ${errors.name ? "border-red-500" : "border-gray-300"}`}
-                
+                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 ${errors.name ? "border-red-500" : "border-gray-300"}`}
+
               />
               {errors.name && <p className="text-red-500 text-sm">Campo obrigatório</p>}
             </div>
@@ -60,12 +70,23 @@ export default function ClientQueue() {
               </label>
               <input
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) => {
+                    const value = e.target.value
+
+                    setFormData({ ...formData, phone: value })
+
+                    setErrors(prev => ({
+                      ...prev,
+                      phone: value.trim() === ''
+                    }))
+                  }
+                }
                 type="tel"
                 placeholder="(00) 99999-9999"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-50 ${errors.phone ? "border-red-500" : "border-gray-300"}`}
               />
 
+              {errors.phone && <p className="text-red-500 text-sm">Campo obrigatório</p>}
             </div>
 
             <div>
@@ -74,14 +95,26 @@ export default function ClientQueue() {
               </label>
               <select
                 value={formData.establishment}
-                onChange={(e) => setFormData({ ...formData, establishment: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                onChange={(e) => {
+                  const value = e.target.value
+                  
+                  setFormData({ ...formData, establishment: value })
+
+                  setErrors(prev => ({
+                    ...prev,
+                    establishment: value.trim() === ''
+                  }))
+
+                  }
+                }
+                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 ${errors.establishment ? "border-red-500" : "border-gray-300"}`}
               >
                 <option value="">-- Selecione --</option>
                 <option>Banco Central</option>
                 <option>Farmácia ABC</option>
                 <option>Cartório XYZ</option>
               </select>
+              {errors.establishment && <p className="text-red-500 text-sm">Campo obrigatório</p>}
             </div>
 
             <button
