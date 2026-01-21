@@ -50,7 +50,7 @@ export default function AdminPanel() {
                 <td className="px-4 py-3">João Silva</td>
                 <td className="px-4 py-3">(11) 99999-1111</td>
                 <td className="px-4 py-3 text-center">
-                  <button className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700">
+                  <button className="bg-green-600 text-white px-4 py-1 rounded cursor-pointer hover:bg-green-700">
                     Chamar
                   </button>
                 </td>
@@ -60,7 +60,7 @@ export default function AdminPanel() {
                 <td className="px-4 py-3">Maria Santos</td>
                 <td className="px-4 py-3">(11) 99999-2222</td>
                 <td className="px-4 py-3 text-center">
-                  <button className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700">
+                  <button className="bg-green-600 text-white px-4 py-1 rounded cursor-pointer hover:bg-green-700">
                     Chamar
                   </button>
                 </td>

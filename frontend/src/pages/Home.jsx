@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-linear-to-b from-blue-50 to-white">
@@ -9,7 +11,7 @@ export default function Home() {
           <p className="inter-text text-xl text-gray-600 mb-8">
             Gerenciar filas nunca foi tão fácil e seguro
           </p>
-          
+
           <div className="grid md:grid-cols-2 gap-8 mt-12">
             {/* Cliente */}
             <div className="bg-white p-8 rounded-lg shadow-lg">
@@ -20,12 +22,10 @@ export default function Home() {
                 <li>✓ Receba notificações quando estiver próximo</li>
                 <li>✓ Mostre QR Code ao chegar</li>
               </ul>
-              <a 
-                href="/fila" 
-                className="sora-title bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
-              >
+
+              <Link to="/fila" className="sora-title bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
                 Entrar na Fila
-              </a>
+              </Link>
             </div>
 
             {/* Estabelecimento */}
@@ -37,12 +37,9 @@ export default function Home() {
                 <li>✓ Chame próximos da fila</li>
                 <li>✓ Painel de controle completo</li>
               </ul>
-              <a 
-                href="/admin" 
-                className="sora-title bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition"
-              >
+              <Link to="/admin" className="sora-title bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition">
                 Acessar Admin
-              </a>
+              </Link>
             </div>
           </div>
         </div>
