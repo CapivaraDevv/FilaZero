@@ -72,10 +72,23 @@ export default function QueueTracking() {
     // Função para lidar com atualizações da fila
     const handleQueueUpdate = (data) => {
       console.log('📊 Evento queue:update recebido:', data);
+      
+      // Se houver uma nova entrada e for a nossa, atualizar
+      if (data.newEntry && data.newEntry.id === queueEntry.id) {
+        console.log('🆕 Nova entrada detectada (nossa):', data.newEntry);
+        const updated = { ...queueEntry, ...data.newEntry };
+        localStorage.setItem(`queue_entry_${queueEntry.id}`, JSON.stringify(updated));
+        setQueueEntry(updated);
+        if (data.newEntry.status === 'called') {
+          setIsCalled(true);
+        }
+      }
+      
       // Buscar a entrada atualizada na fila
       const updatedEntry = data.queue?.find(
         entry => entry.id === queueEntry.id
       );
+      
       if (updatedEntry) {
         setCurrentPosition(updatedEntry.position);
         // Atualizar localStorage
@@ -83,27 +96,44 @@ export default function QueueTracking() {
         localStorage.setItem(`queue_entry_${queueEntry.id}`, JSON.stringify(updated));
         setQueueEntry(updated);
         console.log('📍 Posição atualizada:', updatedEntry.position);
+      } else {
+        // Se não está mais na fila de espera, pode ter sido chamado
+        console.log('⚠️ Entrada não encontrada na fila de espera - pode ter sido chamada');
       }
     };
     
     // Função para lidar com chamada
     const handleQueueCalled = (data) => {
       console.log('🔔🔔🔔 Evento queue:called recebido:', data);
+      console.log('🔍 Dados completos:', JSON.stringify(data, null, 2));
+      console.log('🔍 Entry recebida:', data.entry);
+      console.log('🔍 QueueEntry atual:', queueEntry);
       console.log('🔍 Comparando IDs:', data.entry?.id, '===', queueEntry.id);
       console.log('🔍 Tipo dos IDs:', typeof data.entry?.id, typeof queueEntry.id);
       
       // Comparação mais robusta (string ou número)
-      const entryId = String(data.entry?.id || '');
-      const myId = String(queueEntry.id || '');
+      const entryId = String(data.entry?.id || '').trim();
+      const myId = String(queueEntry.id || '').trim();
       
-      if (entryId === myId) {
-        console.log('✅ ID corresponde! Cliente foi chamado.');
+      // Verificar também por nome e telefone como fallback
+      const isSamePerson = entryId === myId || (
+        data.entry?.name === queueEntry.name &&
+        data.entry?.phone === queueEntry.phone &&
+        data.establishmentId === queueEntry.establishmentId
+      );
+      
+      if (isSamePerson) {
+        console.log('✅ Cliente identificado! Foi chamado.');
+        console.log('🔄 Atualizando estado isCalled para true');
         setIsCalled(true);
         
         // Atualizar localStorage
-        const updated = { ...queueEntry, status: 'called' };
-        localStorage.setItem(`queue_entry_${queueEntry.id}`, JSON.stringify(updated));
+        const updated = { ...queueEntry, status: 'called', id: data.entry?.id || queueEntry.id };
+        localStorage.setItem(`queue_entry_${updated.id}`, JSON.stringify(updated));
         setQueueEntry(updated);
+        
+        // Forçar re-render
+        console.log('✅ Estado atualizado. isCalled deve ser true agora.');
         
         // Notificação do navegador (se permitido)
         console.log('🔔 Tentando criar notificação...');
@@ -211,6 +241,35 @@ export default function QueueTracking() {
     }
   }, []);
 
+  // Verificar status no localStorage periodicamente (fallback)
+  useEffect(() => {
+    if (!queueEntry) return;
+
+    const checkStatus = () => {
+      const stored = localStorage.getItem(`queue_entry_${queueEntry.id}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.status === 'called' && !isCalled) {
+          console.log('🔄 Status atualizado via localStorage:', parsed);
+          setIsCalled(true);
+          setQueueEntry(parsed);
+        }
+      }
+    };
+
+    // Verificar a cada 2 segundos
+    const interval = setInterval(checkStatus, 2000);
+    return () => clearInterval(interval);
+  }, [queueEntry, isCalled]);
+
+  // Monitorar mudanças no estado isCalled
+  useEffect(() => {
+    console.log('🔄 Estado isCalled mudou para:', isCalled);
+    if (isCalled) {
+      console.log('✅ Cliente foi chamado! Aviso visual deve aparecer.');
+    }
+  }, [isCalled]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
@@ -251,18 +310,26 @@ export default function QueueTracking() {
         }`}>
           {isCalled ? (
             <>
-              <div className="text-center mb-6">
-                <h1 className="text-4xl font-bold text-yellow-900 mb-2 animate-pulse">
+              <div className="text-center mb-6 animate-bounce">
+                <div className="bg-yellow-400 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4 animate-pulse">
+                  <span className="text-5xl">🔔</span>
+                </div>
+                <h1 className="text-5xl font-bold text-yellow-900 mb-2 animate-pulse">
                   SUA VEZ CHEGOU!
                 </h1>
-                <p className="text-lg text-yellow-800">
+                <p className="text-xl text-yellow-800 font-semibold">
                   Você foi chamado! Dirija-se ao atendimento.
                 </p>
               </div>
-              <div className="bg-white rounded-lg p-6 space-y-3">
-                <p><strong>Nome:</strong> {queueEntry.name}</p>
-                <p><strong>Telefone:</strong> {queueEntry.phone}</p>
-                <p><strong>Estabelecimento:</strong> {queueEntry.establishmentId}</p>
+              <div className="bg-white rounded-lg p-6 space-y-3 shadow-md">
+                <p className="text-lg"><strong>Nome:</strong> {queueEntry.name}</p>
+                <p className="text-lg"><strong>Telefone:</strong> {queueEntry.phone}</p>
+                <p className="text-lg"><strong>Estabelecimento:</strong> {queueEntry.establishmentId}</p>
+              </div>
+              <div className="mt-6 text-center">
+                <div className="bg-yellow-200 rounded-lg p-4">
+                  <p className="text-yellow-900 font-bold">⚠️ Por favor, vá até o balcão de atendimento!</p>
+                </div>
               </div>
             </>
           ) : (
