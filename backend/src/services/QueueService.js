@@ -29,16 +29,29 @@ class QueueService {
       // createdAt e _id são criados automaticamente
     });
     
+    // Converter para objeto simples (com id em vez de _id)
+    const entryData = {
+      id: entry._id.toString(),
+      name: entry.name,
+      phone: entry.phone,
+      establishmentId: entry.establishmentId,
+      position: entry.position,
+      status: entry.status,
+      createdAt: entry.createdAt,
+      calledAt: entry.calledAt,
+      servedAt: entry.servedAt
+    };
+    
     // Emitir evento WebSocket de atualização da fila
     const queue = await this.getQueue(establishmentId);
     const stats = await this.getStats(establishmentId);
     emitQueueUpdate(establishmentId, {
       queue,
       stats,
-      newEntry: entry,
+      newEntry: entryData,
     });
     
-    return entry;
+    return entryData;
   }
 
   // Obter fila de um estabelecimento (apenas esperando)
