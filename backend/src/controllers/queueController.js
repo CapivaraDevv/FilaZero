@@ -1,7 +1,7 @@
 import queueService from '../services/QueueService.js';
 
 // Adicionar pessoa na fila
-export const addToQueue = (req, res) => {
+export const addToQueue = async (req, res) => {
   try {
     const { establishmentId, name, phone } = req.body;
 
@@ -18,7 +18,7 @@ export const addToQueue = (req, res) => {
       });
     }
 
-    const entry = queueService.addToQueue(establishmentId, name, phone);
+    const entry = await queueService.addToQueue(establishmentId, name, phone);
     res.status(201).json({
       success: true,
       data: entry,
@@ -33,7 +33,7 @@ export const addToQueue = (req, res) => {
 };
 
 // Obter fila de um estabelecimento
-export const getQueue = (req, res) => {
+export const getQueue = async (req, res) => {
   try {
     const { establishmentId } = req.params;
 
@@ -43,8 +43,8 @@ export const getQueue = (req, res) => {
       });
     }
 
-    const queue = queueService.getQueue(establishmentId);
-    const stats = queueService.getStats(establishmentId);
+    const queue = await queueService.getQueue(establishmentId);
+    const stats = await queueService.getStats(establishmentId);
 
     res.json({
       success: true,
@@ -62,7 +62,7 @@ export const getQueue = (req, res) => {
 };
 
 // Obter todas as entradas (para admin)
-export const getAllEntries = (req, res) => {
+export const getAllEntries = async (req, res) => {
   try {
     const { establishmentId } = req.params;
 
@@ -72,8 +72,8 @@ export const getAllEntries = (req, res) => {
       });
     }
 
-    const entries = queueService.getAllEntries(establishmentId);
-    const stats = queueService.getStats(establishmentId);
+    const entries = await queueService.getAllEntries(establishmentId);
+    const stats = await queueService.getStats(establishmentId);
 
     res.json({
       success: true,
@@ -91,7 +91,7 @@ export const getAllEntries = (req, res) => {
 };
 
 // Chamar próximo da fila
-export const callNext = (req, res) => {
+export const callNext = async (req, res) => {
   try {
     const { establishmentId } = req.params;
 
@@ -101,7 +101,7 @@ export const callNext = (req, res) => {
       });
     }
 
-    const entry = queueService.callNext(establishmentId);
+    const entry = await queueService.callNext(establishmentId);
 
     if (!entry) {
       return res.status(404).json({
@@ -123,7 +123,7 @@ export const callNext = (req, res) => {
 };
 
 // Finalizar atendimento
-export const serveEntry = (req, res) => {
+export const serveEntry = async (req, res) => {
   try {
     const { establishmentId, entryId } = req.params;
 
@@ -133,7 +133,7 @@ export const serveEntry = (req, res) => {
       });
     }
 
-    const entry = queueService.serveEntry(establishmentId, entryId);
+    const entry = await queueService.serveEntry(establishmentId, entryId);
 
     if (!entry) {
       return res.status(404).json({
