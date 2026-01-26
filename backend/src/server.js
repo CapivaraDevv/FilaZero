@@ -1,9 +1,13 @@
+
+import 'dotenv/config';
+
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import queueRoutes from './routes/queueRoutes.js';
 import { initSocketIO } from './services/socketService.js';
+import { connectDatabase } from './config/database.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -58,7 +62,13 @@ io.on('connection', (socket) => {
   });
 });
 
-httpServer.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`🔌 WebSocket ativo`);
+
+connectDatabase().then(() => {
+  httpServer.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    console.log(`🔌 WebSocket ativo`);
+  });
+}).catch((error) => {
+  console.error('❌ Erro ao iniciar servidor:', error);
+  process.exit(1);
 });
