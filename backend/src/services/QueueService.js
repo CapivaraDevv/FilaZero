@@ -1,44 +1,37 @@
-// Serviço para gerenciar a fila em memória
-// TODO: Migrar para banco de dados depois
+// Serviço para gerenciar a fila usando MongoDB
 
 import { emitQueueUpdate, emitQueueCalled, emitQueueServed } from './socketService.js';
+import QueueEntry from '../models/QueueEntry.js';
 
 class QueueService {
   constructor() {
-    // Estrutura: { establishmentId: [queueEntries...] }
-    this.queues = {};
-    // Estatísticas por estabelecimento
-    this.stats = {};
+  
+    
   }
 
   // Adicionar pessoa na fila
-  addToQueue(establishmentId, name, phone) {
-    if (!this.queues[establishmentId]) {
-      this.queues[establishmentId] = [];
-      this.stats[establishmentId] = {
-        totalServed: 0,
-        averageTime: 0,
-      };
-    }
+  async addToQueue(establishmentId, name, phone) {
+    // Contar quantos estão esperando para calcular a posição
+    const waitingCount = await QueueEntry.countDocuments({
+      establishmentId,
+      status: 'waiting'
+    });
+    
+    const position = waitingCount + 1;
 
-    const position = this.queues[establishmentId].length + 1;
-    const entry = {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+    // Criar nova entrada no banco
+    const entry = await QueueEntry.create({
       name: name.trim(),
       phone: phone.trim(),
       establishmentId,
       position,
-      status: 'waiting', // waiting, called, served
-      createdAt: new Date().toISOString(),
-      calledAt: null,
-      servedAt: null,
-    };
-
-    this.queues[establishmentId].push(entry);
+      status: 'waiting'
+      // createdAt e _id são criados automaticamente
+    });
     
     // Emitir evento WebSocket de atualização da fila
-    const queue = this.getQueue(establishmentId);
-    const stats = this.getStats(establishmentId);
+    const queue = await this.getQueue(establishmentId);
+    const stats = await this.getStats(establishmentId);
     emitQueueUpdate(establishmentId, {
       queue,
       stats,
@@ -48,150 +41,210 @@ class QueueService {
     return entry;
   }
 
-  // Obter fila de um estabelecimento
-  getQueue(establishmentId) {
-    if (!this.queues[establishmentId]) {
-      return [];
-    }
-    return this.queues[establishmentId]
-      .filter(entry => entry.status === 'waiting')
-      .map((entry, index) => ({
-        ...entry,
-        position: index + 1,
-      }));
+  // Obter fila de um estabelecimento (apenas esperando)
+  async getQueue(establishmentId) {
+    // Buscar todas as entradas esperando, ordenadas por data de criação
+    const entries = await QueueEntry.find({
+      establishmentId,
+      status: 'waiting'
+    }).sort({ createdAt: 1 }); // 1 = crescente (mais antigo primeiro)
+    
+    // Atualizar posições e converter para objeto simples
+    return entries.map((entry, index) => ({
+      id: entry._id.toString(), // MongoDB usa _id, converter para string
+      name: entry.name,
+      phone: entry.phone,
+      establishmentId: entry.establishmentId,
+      position: index + 1,
+      status: entry.status,
+      createdAt: entry.createdAt,
+      calledAt: entry.calledAt,
+      servedAt: entry.servedAt
+    }));
   }
 
   // Obter todas as entradas (incluindo chamadas e atendidas)
-  getAllEntries(establishmentId) {
-    if (!this.queues[establishmentId]) {
-      return [];
-    }
-    return this.queues[establishmentId].map((entry, index) => {
+  async getAllEntries(establishmentId) {
+    // Buscar todas as entradas do estabelecimento
+    const allEntries = await QueueEntry.find({ establishmentId })
+      .sort({ createdAt: 1 });
+    
+    // Separar por status
+    const waitingEntries = allEntries.filter(e => e.status === 'waiting');
+    
+    // Converter para objeto simples e calcular posições
+    return allEntries.map((entry) => {
+      const baseEntry = {
+        id: entry._id.toString(),
+        name: entry.name,
+        phone: entry.phone,
+        establishmentId: entry.establishmentId,
+        status: entry.status,
+        createdAt: entry.createdAt,
+        calledAt: entry.calledAt,
+        servedAt: entry.servedAt
+      };
+      
+      // Se está esperando, calcular posição baseada na ordem
       if (entry.status === 'waiting') {
-        const waitingEntries = this.queues[establishmentId].filter(e => e.status === 'waiting');
-        const position = waitingEntries.findIndex(e => e.id === entry.id) + 1;
-        return { ...entry, position };
+        const position = waitingEntries.findIndex(e => e._id.toString() === entry._id.toString()) + 1;
+        return { ...baseEntry, position };
       }
-      return { ...entry, position: entry.position };
+      
+      // Se já foi chamado ou atendido, usar a posição salva
+      return { ...baseEntry, position: entry.position };
     });
   }
 
   // Chamar próximo da fila
-  callNext(establishmentId) {
-    if (!this.queues[establishmentId]) {
+  async callNext(establishmentId) {
+    // Buscar a primeira entrada esperando (mais antiga)
+    const nextEntry = await QueueEntry.findOne({
+      establishmentId,
+      status: 'waiting'
+    }).sort({ createdAt: 1 }); // Mais antigo primeiro
+
+    if (!nextEntry) {
       return null;
     }
 
-    const waitingEntries = this.queues[establishmentId].filter(
-      entry => entry.status === 'waiting'
-    );
-
-    if (waitingEntries.length === 0) {
-      return null;
-    }
-
-    const nextEntry = waitingEntries[0];
+    // Atualizar status para 'called' e salvar data
     nextEntry.status = 'called';
-    nextEntry.calledAt = new Date().toISOString();
+    nextEntry.calledAt = new Date();
+    await nextEntry.save();
 
     // Atualizar posições dos que ainda estão esperando
-    this.updatePositions(establishmentId);
+    await this.updatePositions(establishmentId);
+
+    // Converter para objeto simples
+    const entryData = {
+      id: nextEntry._id.toString(),
+      name: nextEntry.name,
+      phone: nextEntry.phone,
+      establishmentId: nextEntry.establishmentId,
+      position: nextEntry.position,
+      status: nextEntry.status,
+      createdAt: nextEntry.createdAt,
+      calledAt: nextEntry.calledAt,
+      servedAt: nextEntry.servedAt
+    };
 
     // Emitir evento WebSocket de cliente chamado
-    console.log('📢 Emitindo evento queue:called para:', nextEntry);
-    emitQueueCalled(establishmentId, nextEntry);
+    console.log('📢 Emitindo evento queue:called para:', entryData);
+    emitQueueCalled(establishmentId, entryData);
     
     // Emitir atualização geral da fila
-    const queue = this.getQueue(establishmentId);
-    const stats = this.getStats(establishmentId);
+    const queue = await this.getQueue(establishmentId);
+    const stats = await this.getStats(establishmentId);
     emitQueueUpdate(establishmentId, {
       queue,
       stats,
     });
 
-    return nextEntry;
+    return entryData;
   }
 
   // Finalizar atendimento
-  serveEntry(establishmentId, entryId) {
-    if (!this.queues[establishmentId]) {
-      return null;
-    }
+  async serveEntry(establishmentId, entryId) {
+    // Buscar a entrada no banco
+    const entry = await QueueEntry.findOne({
+      _id: entryId,
+      establishmentId
+    });
 
-    const entry = this.queues[establishmentId].find(e => e.id === entryId);
     if (!entry) {
       return null;
     }
 
+    // Atualizar status e data de atendimento
     entry.status = 'served';
-    entry.servedAt = new Date().toISOString();
+    entry.servedAt = new Date();
+    await entry.save();
 
-    // Atualizar estatísticas
-    if (!this.stats[establishmentId]) {
-      this.stats[establishmentId] = { totalServed: 0, averageTime: 0 };
-    }
-    this.stats[establishmentId].totalServed += 1;
-
-    // Calcular tempo médio (simplificado)
-    const servedEntries = this.queues[establishmentId].filter(e => e.status === 'served');
-    if (servedEntries.length > 0) {
-      const totalTime = servedEntries.reduce((acc, e) => {
-        if (e.calledAt && e.servedAt) {
-          const time = new Date(e.servedAt) - new Date(e.calledAt);
-          return acc + time;
-        }
-        return acc;
-      }, 0);
-      this.stats[establishmentId].averageTime = Math.round(totalTime / servedEntries.length / 1000 / 60); // em minutos
-    }
-
-    this.updatePositions(establishmentId);
+    // Atualizar posições dos que ainda estão esperando
+    await this.updatePositions(establishmentId);
+    
+    // Converter para objeto simples
+    const entryData = {
+      id: entry._id.toString(),
+      name: entry.name,
+      phone: entry.phone,
+      establishmentId: entry.establishmentId,
+      position: entry.position,
+      status: entry.status,
+      createdAt: entry.createdAt,
+      calledAt: entry.calledAt,
+      servedAt: entry.servedAt
+    };
     
     // Emitir evento WebSocket de atendimento finalizado
-    emitQueueServed(establishmentId, entry);
+    emitQueueServed(establishmentId, entryData);
     
     // Emitir atualização geral da fila
-    const queue = this.getQueue(establishmentId);
-    const stats = this.getStats(establishmentId);
+    const queue = await this.getQueue(establishmentId);
+    const stats = await this.getStats(establishmentId);
     emitQueueUpdate(establishmentId, {
       queue,
       stats,
     });
     
-    return entry;
+    return entryData;
   }
 
   // Atualizar posições dos que estão esperando
-  updatePositions(establishmentId) {
-    if (!this.queues[establishmentId]) {
-      return;
+  async updatePositions(establishmentId) {
+    // Buscar todas as entradas esperando, ordenadas por data
+    const waitingEntries = await QueueEntry.find({
+      establishmentId,
+      status: 'waiting'
+    }).sort({ createdAt: 1 });
+
+    // Atualizar posição de cada uma
+    for (let index = 0; index < waitingEntries.length; index++) {
+      waitingEntries[index].position = index + 1;
+      await waitingEntries[index].save();
     }
-
-    const waitingEntries = this.queues[establishmentId]
-      .filter(entry => entry.status === 'waiting')
-      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-
-    waitingEntries.forEach((entry, index) => {
-      entry.position = index + 1;
-    });
   }
 
   // Obter estatísticas
-  getStats(establishmentId) {
-    if (!this.stats[establishmentId]) {
-      return {
-        totalWaiting: 0,
-        totalServed: 0,
-        averageTime: 0,
-      };
+  async getStats(establishmentId) {
+    // Contar quantos estão esperando
+    const totalWaiting = await QueueEntry.countDocuments({
+      establishmentId,
+      status: 'waiting'
+    });
+
+    // Contar quantos foram atendidos hoje
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const totalServed = await QueueEntry.countDocuments({
+      establishmentId,
+      status: 'served',
+      servedAt: { $gte: today } // $gte = maior ou igual (hoje ou depois)
+    });
+
+    // Calcular tempo médio de atendimento (em minutos)
+    const servedEntries = await QueueEntry.find({
+      establishmentId,
+      status: 'served',
+      calledAt: { $exists: true },
+      servedAt: { $exists: true }
+    });
+
+    let averageTime = 0;
+    if (servedEntries.length > 0) {
+      const totalTime = servedEntries.reduce((acc, entry) => {
+        const time = new Date(entry.servedAt) - new Date(entry.calledAt);
+        return acc + time;
+      }, 0);
+      averageTime = Math.round(totalTime / servedEntries.length / 1000 / 60); // converter para minutos
     }
 
-    const waitingCount = this.getQueue(establishmentId).length;
-
     return {
-      totalWaiting: waitingCount,
-      totalServed: this.stats[establishmentId].totalServed || 0,
-      averageTime: this.stats[establishmentId].averageTime || 0,
+      totalWaiting,
+      totalServed,
+      averageTime
     };
   }
 }
