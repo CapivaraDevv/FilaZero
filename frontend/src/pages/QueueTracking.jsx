@@ -253,7 +253,7 @@ export default function QueueTracking() {
             <>
               <div className="text-center mb-6">
                 <h1 className="text-4xl font-bold text-yellow-900 mb-2 animate-pulse">
-                  🔔 SUA VEZ CHEGOU!
+                  SUA VEZ CHEGOU!
                 </h1>
                 <p className="text-lg text-yellow-800">
                   Você foi chamado! Dirija-se ao atendimento.
