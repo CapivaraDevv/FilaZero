@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { queueAPI } from "../services/api.js";
 import { getSocket, joinQueue, leaveQueue } from "../services/socketService.js";
 
 export default function QueueTracking() {
@@ -17,29 +16,26 @@ export default function QueueTracking() {
   useEffect(() => {
     const fetchEntry = async () => {
       if (!entryId) {
-        setError('ID da entrada não fornecido');
+        setError("ID da entrada não fornecido");
         setLoading(false);
         return;
       }
 
       try {
-        // Como não temos uma rota específica para buscar por ID, vamos tentar buscar pela fila
-        // Por enquanto, vamos usar uma abordagem diferente - armazenar no localStorage
         const storedEntry = localStorage.getItem(`queue_entry_${entryId}`);
         if (storedEntry) {
           const entry = JSON.parse(storedEntry);
           setQueueEntry(entry);
           setCurrentPosition(entry.position);
-          setIsCalled(entry.status === 'called');
+          setIsCalled(entry.status === "called");
           setLoading(false);
           return;
         }
 
-        // Se não encontrar no localStorage, mostrar erro
-        setError('Entrada não encontrada. Por favor, entre na fila novamente.');
+        setError("Entrada não encontrada. Por favor, entre na fila novamente.");
         setLoading(false);
-      } catch (err) {
-        setError('Erro ao carregar dados da fila');
+      } catch {
+        setError("Erro ao carregar dados da fila");
         setLoading(false);
       }
     };
@@ -47,254 +43,152 @@ export default function QueueTracking() {
     fetchEntry();
   }, [entryId]);
 
-  // Configurar WebSocket quando tiver os dados da entrada
+  // WebSocket
   useEffect(() => {
-    if (!queueEntry || !queueEntry.establishmentId) return;
+    if (!queueEntry?.establishmentId) return;
 
     const socket = getSocket();
     socketRef.current = socket;
-    
-    // Entrar na sala da fila
+
     const setupSocket = () => {
-      if (socket.connected) {
-        joinQueue(queueEntry.establishmentId);
-        console.log('✅ Entrou na sala da fila:', queueEntry.establishmentId);
-      } else {
-        socket.once('connect', () => {
-          joinQueue(queueEntry.establishmentId);
-          console.log('✅ Conectado e entrou na sala da fila:', queueEntry.establishmentId);
-        });
-      }
+      joinQueue(queueEntry.establishmentId);
     };
-    
-    setupSocket();
-    
-    // Função para lidar com atualizações da fila
+
+    socket.connected
+      ? setupSocket()
+      : socket.once("connect", setupSocket);
+
     const handleQueueUpdate = (data) => {
-      console.log('📊 Evento queue:update recebido:', data);
-      
-      // Se houver uma nova entrada e for a nossa, atualizar
-      if (data.newEntry && data.newEntry.id === queueEntry.id) {
-        console.log('🆕 Nova entrada detectada (nossa):', data.newEntry);
+      if (data.newEntry?.id === queueEntry.id) {
         const updated = { ...queueEntry, ...data.newEntry };
-        localStorage.setItem(`queue_entry_${queueEntry.id}`, JSON.stringify(updated));
+        localStorage.setItem(
+          `queue_entry_${queueEntry.id}`,
+          JSON.stringify(updated)
+        );
         setQueueEntry(updated);
-        if (data.newEntry.status === 'called') {
+        if (data.newEntry.status === "called") {
           setIsCalled(true);
         }
       }
-      
-      // Buscar a entrada atualizada na fila
+
       const updatedEntry = data.queue?.find(
-        entry => entry.id === queueEntry.id
+        (entry) => entry.id === queueEntry.id
       );
-      
+
       if (updatedEntry) {
-        setCurrentPosition(updatedEntry.position);
-        // Atualizar localStorage
         const updated = { ...queueEntry, position: updatedEntry.position };
-        localStorage.setItem(`queue_entry_${queueEntry.id}`, JSON.stringify(updated));
+        setCurrentPosition(updatedEntry.position);
         setQueueEntry(updated);
-        console.log('📍 Posição atualizada:', updatedEntry.position);
-      } else {
-        // Se não está mais na fila de espera, pode ter sido chamado
-        console.log('⚠️ Entrada não encontrada na fila de espera - pode ter sido chamada');
+        localStorage.setItem(
+          `queue_entry_${queueEntry.id}`,
+          JSON.stringify(updated)
+        );
       }
     };
-    
-    // Função para lidar com chamada
+
     const handleQueueCalled = (data) => {
-      console.log('🔔🔔🔔 Evento queue:called recebido:', data);
-      console.log('🔍 Dados completos:', JSON.stringify(data, null, 2));
-      console.log('🔍 Entry recebida:', data.entry);
-      console.log('🔍 QueueEntry atual:', queueEntry);
-      console.log('🔍 Comparando IDs:', data.entry?.id, '===', queueEntry.id);
-      console.log('🔍 Tipo dos IDs:', typeof data.entry?.id, typeof queueEntry.id);
-      
-      // Comparação mais robusta (string ou número)
-      const entryId = String(data.entry?.id || '').trim();
-      const myId = String(queueEntry.id || '').trim();
-      
-      // Verificar também por nome e telefone como fallback
-      const isSamePerson = entryId === myId || (
-        data.entry?.name === queueEntry.name &&
-        data.entry?.phone === queueEntry.phone &&
-        data.establishmentId === queueEntry.establishmentId
+      const entryId = String(data.entry?.id || "").trim();
+      const myId = String(queueEntry.id || "").trim();
+
+      const isSamePerson =
+        entryId === myId ||
+        (data.entry?.name === queueEntry.name &&
+          data.entry?.phone === queueEntry.phone &&
+          data.establishmentId === queueEntry.establishmentId);
+
+      if (!isSamePerson) return;
+
+      setIsCalled(true);
+
+      const updated = {
+        ...queueEntry,
+        status: "called",
+        id: data.entry?.id || queueEntry.id,
+      };
+
+      setQueueEntry(updated);
+      localStorage.setItem(
+        `queue_entry_${updated.id}`,
+        JSON.stringify(updated)
       );
-      
-      if (isSamePerson) {
-        console.log('✅ Cliente identificado! Foi chamado.');
-        console.log('🔄 Atualizando estado isCalled para true');
-        setIsCalled(true);
-        
-        // Atualizar localStorage
-        const updated = { ...queueEntry, status: 'called', id: data.entry?.id || queueEntry.id };
-        localStorage.setItem(`queue_entry_${updated.id}`, JSON.stringify(updated));
-        setQueueEntry(updated);
-        
-        // Forçar re-render
-        console.log('✅ Estado atualizado. isCalled deve ser true agora.');
-        
-        // Notificação do navegador (se permitido)
-        console.log('🔔 Tentando criar notificação...');
-        console.log('📱 Notification API disponível?', 'Notification' in window);
-        console.log('📱 Permissão atual:', Notification.permission);
-        
-        if ('Notification' in window) {
-          if (Notification.permission === 'granted') {
-            try {
-              console.log('✅ Permissão concedida, criando notificação...');
-              const notification = new Notification('🔔 Sua vez chegou!', {
-                body: `Você foi chamado na fila. Dirija-se ao atendimento!`,
-                icon: '/favicon.ico',
-                badge: '/favicon.ico',
-                tag: 'queue-called',
-                requireInteraction: true,
-              });
-              
-              // Focar na janela quando clicar na notificação
-              notification.onclick = () => {
-                window.focus();
-                notification.close();
-              };
-              
-              notification.onerror = (error) => {
-                console.error('❌ Erro na notificação:', error);
-              };
-              
-              console.log('✅ Notificação criada com sucesso:', notification);
-            } catch (error) {
-              console.error('❌ Erro ao criar notificação:', error);
-              console.error('❌ Detalhes do erro:', error.message, error.stack);
-            }
-          } else if (Notification.permission === 'default') {
-            console.log('⚠️ Permissão ainda não foi solicitada, tentando solicitar...');
-            // Tentar solicitar permissão novamente
-            Notification.requestPermission().then(permission => {
-              console.log('📝 Nova permissão de notificação:', permission);
-              if (permission === 'granted') {
-                try {
-                  const notification = new Notification('🔔 Sua vez chegou!', {
-                    body: `Você foi chamado na fila. Dirija-se ao atendimento!`,
-                    icon: '/favicon.ico',
-                  });
-                  console.log('✅ Notificação criada após solicitar permissão');
-                } catch (error) {
-                  console.error('❌ Erro ao criar notificação após permissão:', error);
-                }
-              }
-            }).catch(error => {
-              console.error('❌ Erro ao solicitar permissão:', error);
-            });
-          } else {
-            console.warn('⚠️ Permissão de notificação negada pelo usuário');
-          }
-        } else {
-          console.warn('⚠️ Notificações não são suportadas neste navegador');
+
+      if ("Notification" in window && Notification.permission === "granted") {
+        try {
+          const notification = new Notification("🔔 Sua vez chegou!", {
+            body: "Você foi chamado na fila. Dirija-se ao atendimento!",
+            icon: "/favicon.ico",
+            tag: "queue-called",
+            requireInteraction: true,
+          });
+
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+          };
+        } catch (error) {
+          console.error("Erro ao criar notificação:", error);
         }
-        
-        // Scroll para o topo para garantir que o usuário veja o alerta
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        console.log('❌ ID não corresponde. Este evento não é para este cliente.');
       }
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
     };
-    
-    // Escutar atualizações da fila
-    socket.on('queue:update', handleQueueUpdate);
-    socket.on('queue:called', handleQueueCalled);
-    
-    // Log para confirmar que os listeners foram registrados
-    console.log('🎧 Listeners WebSocket registrados:', {
-      'queue:update': '✅',
-      'queue:called': '✅',
-      entryId: queueEntry.id,
-      establishmentId: queueEntry.establishmentId
-    });
-    
-    // Guardar handlers para limpeza depois
-    socketRef.current.updateHandler = handleQueueUpdate;
-    socketRef.current.calledHandler = handleQueueCalled;
-    
-    // Limpar ao desmontar
+
+    socket.on("queue:update", handleQueueUpdate);
+    socket.on("queue:called", handleQueueCalled);
+
     return () => {
-      if (socketRef.current) {
-        if (socketRef.current.updateHandler) {
-          socketRef.current.off('queue:update', socketRef.current.updateHandler);
-        }
-        if (socketRef.current.calledHandler) {
-          socketRef.current.off('queue:called', socketRef.current.calledHandler);
-        }
-      }
-      if (queueEntry?.establishmentId) {
-        leaveQueue(queueEntry.establishmentId);
-      }
+      socket.off("queue:update", handleQueueUpdate);
+      socket.off("queue:called", handleQueueCalled);
+      leaveQueue(queueEntry.establishmentId);
     };
   }, [queueEntry]);
 
-  // Solicitar permissão de notificação
+  // Permissão de notificação
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
+    if ("Notification" in window && Notification.permission === "default") {
       setTimeout(() => {
         Notification.requestPermission();
       }, 1000);
     }
   }, []);
 
-  // Verificar status no localStorage periodicamente (fallback)
+  // Fallback via localStorage
   useEffect(() => {
     if (!queueEntry) return;
 
-    const checkStatus = () => {
+    const interval = setInterval(() => {
       const stored = localStorage.getItem(`queue_entry_${queueEntry.id}`);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed.status === 'called' && !isCalled) {
-          console.log('🔄 Status atualizado via localStorage:', parsed);
+        if (parsed.status === "called" && !isCalled) {
           setIsCalled(true);
           setQueueEntry(parsed);
         }
       }
-    };
+    }, 2000);
 
-    // Verificar a cada 2 segundos
-    const interval = setInterval(checkStatus, 2000);
     return () => clearInterval(interval);
   }, [queueEntry, isCalled]);
 
-  // Monitorar mudanças no estado isCalled
-  useEffect(() => {
-    console.log('🔄 Estado isCalled mudou para:', isCalled);
-    if (isCalled) {
-      console.log('✅ Cliente foi chamado! Aviso visual deve aparecer.');
-    }
-  }, [isCalled]);
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando informações da fila...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
       </div>
     );
   }
 
   if (error || !queueEntry) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-2xl mx-auto px-4">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Erro</h1>
-            <p className="text-red-600 mb-6">{error || 'Entrada não encontrada'}</p>
-            <button
-              onClick={() => navigate('/fila')}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
-              Voltar para Entrar na Fila
-            </button>
-          </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => navigate("/fila")}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg"
+          >
+            Voltar
+          </button>
         </div>
       </div>
     );
@@ -303,74 +197,33 @@ export default function QueueTracking() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto px-4">
-        <div className={`rounded-lg shadow-lg p-8 border-2 ${
-          isCalled 
-            ? 'bg-yellow-100 border-yellow-500' 
-            : 'bg-white border-gray-200'
-        }`}>
+        <div
+          className={`rounded-lg shadow-lg p-8 border-2 ${
+            isCalled
+              ? "bg-yellow-100 border-yellow-500"
+              : "bg-white border-gray-200"
+          }`}
+        >
           {isCalled ? (
-            <>
-              <div className="text-center mb-6 animate-bounce">
-                <div className="bg-yellow-400 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4 animate-pulse">
-                  <span className="text-5xl">🔔</span>
-                </div>
-                <h1 className="text-5xl font-bold text-yellow-900 mb-2 animate-pulse">
-                  SUA VEZ CHEGOU!
-                </h1>
-                <p className="text-xl text-yellow-800 font-semibold">
-                  Você foi chamado! Dirija-se ao atendimento.
-                </p>
-              </div>
-              <div className="bg-white rounded-lg p-6 space-y-3 shadow-md">
-                <p className="text-lg"><strong>Nome:</strong> {queueEntry.name}</p>
-                <p className="text-lg"><strong>Telefone:</strong> {queueEntry.phone}</p>
-                <p className="text-lg"><strong>Estabelecimento:</strong> {queueEntry.establishmentId}</p>
-              </div>
-              <div className="mt-6 text-center">
-                <div className="bg-yellow-200 rounded-lg p-4">
-                  <p className="text-yellow-900 font-bold">⚠️ Por favor, vá até o balcão de atendimento!</p>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">
+            <div className="text-center">
+              <h1 className="sora-title text-5xl font-bold text-black mb-4">
+                SUA VEZ CHEGOU!
+              </h1>
+              <p className="inter-text text-xl text-black">
+                Dirija-se ao atendimento.
+              </p>
+              <h1 className="text-3xl font-bold mb-6">
                 Acompanhamento da Fila
               </h1>
+              <p className="text-6xl font-bold text-[#000000]">
+                  {currentPosition}
+                </p>
+            </div>
+          ) : (
+            <>
               
-              <div className="bg-blue-50 rounded-lg p-6 mb-6">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-2">Sua posição atual</p>
-                  <p className="text-6xl font-bold text-blue-600">
-                    {currentPosition !== null ? currentPosition : queueEntry.position}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg p-6 space-y-3 mb-6">
-                <p><strong>Nome:</strong> {queueEntry.name}</p>
-                <p><strong>Telefone:</strong> {queueEntry.phone}</p>
-                <p><strong>Estabelecimento:</strong> {queueEntry.establishmentId}</p>
-              </div>
-
-              <div className="bg-green-50 rounded-lg p-4 text-sm">
-                <p className="text-green-800 mb-2">⚡ Atualização em tempo real ativa</p>
-                {Notification.permission === 'granted' ? (
-                  <p className="text-green-600">✅ Notificações ativadas</p>
-                ) : Notification.permission === 'denied' ? (
-                  <p className="text-red-600">❌ Notificações bloqueadas</p>
-                ) : (
-                  <p className="text-yellow-600">⚠️ Aguardando permissão de notificações...</p>
-                )}
-              </div>
-
-              <div className="mt-6 text-center">
-                <button
-                  onClick={() => navigate('/fila')}
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
-                  Entrar com outro cliente
-                </button>
+              <div className="bg-blue-50 rounded-lg p-6 text-center">
+                
               </div>
             </>
           )}
