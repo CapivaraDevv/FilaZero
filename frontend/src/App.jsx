@@ -5,6 +5,7 @@ import ClientQueue from './pages/ClientQueue';
 import AdminPanel from './pages/AdminPanel';
 import QueueTracking from './pages/QueueTracking';
 
+
 function App() {
   return (
     <Router>
