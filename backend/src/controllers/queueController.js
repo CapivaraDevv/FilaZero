@@ -5,19 +5,6 @@ export const addToQueue = async (req, res) => {
   try {
     const { establishmentId, name, phone } = req.body;
 
-    // Validação básica
-    if (!establishmentId || !name || !phone) {
-      return res.status(400).json({
-        error: 'Campos obrigatórios: establishmentId, name, phone',
-      });
-    }
-
-    if (name.trim() === '' || phone.trim() === '') {
-      return res.status(400).json({
-        error: 'Nome e telefone não podem estar vazios',
-      });
-    }
-
     const entry = await queueService.addToQueue(establishmentId, name, phone);
     res.status(201).json({
       success: true,
@@ -36,12 +23,6 @@ export const addToQueue = async (req, res) => {
 export const getQueue = async (req, res) => {
   try {
     const { establishmentId } = req.params;
-
-    if (!establishmentId) {
-      return res.status(400).json({
-        error: 'establishmentId é obrigatório',
-      });
-    }
 
     const queue = await queueService.getQueue(establishmentId);
     const stats = await queueService.getStats(establishmentId);
@@ -66,12 +47,6 @@ export const getAllEntries = async (req, res) => {
   try {
     const { establishmentId } = req.params;
 
-    if (!establishmentId) {
-      return res.status(400).json({
-        error: 'establishmentId é obrigatório',
-      });
-    }
-
     const entries = await queueService.getAllEntries(establishmentId);
     const stats = await queueService.getStats(establishmentId);
 
@@ -94,12 +69,6 @@ export const getAllEntries = async (req, res) => {
 export const callNext = async (req, res) => {
   try {
     const { establishmentId } = req.params;
-
-    if (!establishmentId) {
-      return res.status(400).json({
-        error: 'establishmentId é obrigatório',
-      });
-    }
 
     const entry = await queueService.callNext(establishmentId);
 
@@ -126,12 +95,6 @@ export const callNext = async (req, res) => {
 export const serveEntry = async (req, res) => {
   try {
     const { establishmentId, entryId } = req.params;
-
-    if (!establishmentId || !entryId) {
-      return res.status(400).json({
-        error: 'establishmentId e entryId são obrigatórios',
-      });
-    }
 
     const entry = await queueService.serveEntry(establishmentId, entryId);
 
