@@ -112,7 +112,7 @@ export default function Home() {
                       transition-all duration-200
                       hover:bg-blue-500 hover:scale-105 hover:shadow-lg
                       active:scale-95">
-                Entrar na Fila agora
+                Preencher formulário
               </Link>
             </motion.div>
 
