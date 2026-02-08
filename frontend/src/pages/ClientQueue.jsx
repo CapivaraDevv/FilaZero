@@ -132,10 +132,11 @@ export default function ClientQueue() {
           <motion.form variants={container} initial="hidden"
             animate="visible" onSubmit={handleSubmit} className="space-y-4">
             <motion.div variants={item}>
-              <label className="inter-text block text-gray-700 font-semibold mb-2">
+              <label htmlFor="name-input" className="inter-text block text-gray-700 font-semibold mb-2">
                 Nome Completo
               </label>
               <input
+                id="name-input"
                 value={formData.name}
                 onChange={(e) => {
                   const value = e.target.value
@@ -150,17 +151,19 @@ export default function ClientQueue() {
                 }
                 type="text"
                 placeholder="Seu nome"
-                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 ${errors.name ? "border-red-500" : "border-gray-300"}`}
+                aria-describedby={errors.name ? "name-error" : undefined}
+                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-500" : "border-gray-300"}`}
 
               />
-              {errors.name && <p className="text-red-500 text-sm">Campo obrigatório</p>}
+              {errors.name && <p id="name-error" className="text-red-500 text-sm">Campo obrigatório</p>}
             </motion.div>
 
             <motion.div variants={item}>
-              <label className="inter-text block text-gray-700 font-semibold mb-2">
+              <label htmlFor="phone-input" className="inter-text block text-gray-700 font-semibold mb-2">
                 Telefone
               </label>
               <input
+                id="phone-input"
                 value={formData.phone}
                 onChange={(e) => {
                   const value = e.target.value
@@ -175,17 +178,19 @@ export default function ClientQueue() {
                 }
                 type="tel"
                 placeholder="(00) 99999-9999"
-                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-50 ${errors.phone ? "border-red-500" : "border-gray-300"}`}
+                aria-describedby={errors.phone ? "phone-error" : undefined}
+                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.phone ? "border-red-500" : "border-gray-300"}`}
               />
 
-              {errors.phone && <p className="text-red-500 text-sm">Campo obrigatório</p>}
+              {errors.phone && <p id="phone-error" className="text-red-500 text-sm">Campo obrigatório</p>}
             </motion.div>
 
             <motion.div variants={item}>
-              <label className="inter-text block text-gray-700 font-semibold mb-2">
+              <label htmlFor="establishment-input" className="inter-text block text-gray-700 font-semibold mb-2">
                 Selecione o Estabelecimento
               </label>
               <select
+                id="establishment-input"
                 value={formData.establishment}
                 onChange={(e) => {
                   const value = e.target.value
@@ -199,22 +204,25 @@ export default function ClientQueue() {
 
                 }
                 }
-                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 ${errors.establishment ? "border-red-500" : "border-gray-300"}`}
+                aria-describedby={errors.establishment ? "establishment-error" : undefined}
+                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.establishment ? "border-red-500" : "border-gray-300"}`}
               >
                 <option value="">-- Selecione --</option>
                 <option value="banco-central">Banco Central</option>
                 <option value="farmacia-abc">Farmácia ABC</option>
                 <option value="cartorio-xyz">Cartório XYZ</option>
               </select>
-              {errors.establishment && <p className="text-red-500 text-sm">Campo obrigatório</p>}
+              {errors.establishment && <p id="establishment-error" className="text-red-500 text-sm">Campo obrigatório</p>}
             </motion.div>
 
             <button
               type="submit"
               disabled={loading}
+              aria-busy={loading}
+              aria-label={loading ? 'Aguarde, processando sua entrada na fila' : 'Entrar na fila'}
               className={`w-full cursor-pointer bg-blue-600 text-white font-bold py-2 rounded-lg transition-all duration-200
                       hover:bg-blue-500 hover:scale-105 hover:shadow-lg
-                      active:scale-95 mt-6 ${loading ? 'opacity-50 cursor-not-allowed' : ''
+                      active:scale-95 mt-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 ${loading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
             >
               {loading ? 'Entrando na fila...' : 'Entrar na Fila'}
@@ -222,13 +230,13 @@ export default function ClientQueue() {
           </motion.form>
 
           {error && (
-            <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <div role="alert" aria-live="assertive" className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
               {error}
             </div>
           )}
 
           {success && entryId && (
-            <div className="mt-4 p-6 bg-green-100 border border-green-400 text-green-800 rounded-lg">
+            <div role="alert" aria-live="polite" className="mt-4 p-6 bg-green-100 border border-green-400 text-green-800 rounded-lg">
               <h3 className="font-bold text-lg mb-2">✓ {success}</h3>
               <p className="mb-4">Redirecionando para a página de acompanhamento...</p>
               <div className="bg-white rounded p-3 text-sm">
