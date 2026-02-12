@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { queueAPI } from "../services/api.js";
 import { getSocket, joinQueue, leaveQueue } from "../services/socketService.js";
 
@@ -134,13 +134,11 @@ export default function AdminPanel() {
   const waitingQueue = queue.filter(entry => entry.status === "waiting");
   const calledEntries = queue.filter(entry => entry.status === "called");
 
+  const nameSelected = establishments.find((est) => est.id === selectedEstablishment);
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          Painel de Administrador
-        </h1>
-
         {/* Seleção de Estabelecimento */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <label className="block text-gray-700 font-semibold mb-2">
@@ -159,6 +157,12 @@ export default function AdminPanel() {
             ))}
           </select>
         </div>
+
+        {nameSelected && (
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">
+            {nameSelected.name}
+          </h1>
+        )}
 
         {/* Mensagens de feedback */}
         {error && (

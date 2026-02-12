@@ -62,8 +62,7 @@ export default function Navbar() {
                 ref={index === 0 ? firstLinkRef : undefined}
                 to={path}
                 onClick={() => setIsMenuOpen(false)}
-                className={`block px-3 py-2 rounded hover:scale-110 transition-all focus:outline-none focus:ring-2
-                  focus:ring-blue-400
+                className={`block px-3 py-2 rounded hover:scale-110 transition-all 
                   ${isActive(path)
                     ? 'bg-blue-600 text-white'
                     : 'hover:text-blue-100 text-gray-200'

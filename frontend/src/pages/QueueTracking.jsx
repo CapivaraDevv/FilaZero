@@ -198,7 +198,7 @@ export default function QueueTracking() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto px-4">
         <div
-          className={`rounded-lg shadow-lg p-8 border-2 ${
+          className={`rounded-2xl shadow-xl p-10 bg-white ${
             isCalled
               ? "bg-yellow-100 border-yellow-500"
               : "bg-white border-gray-200"
@@ -223,7 +223,11 @@ export default function QueueTracking() {
             <>
               
               <div className="bg-blue-50 rounded-lg p-6 text-center">
-                
+                <h1 className="sora-title text-4xl">Aguarde até ser chamado</h1>
+                <h2 className="inter-text text-2xl">Posição atual:</h2>
+                <p className="">
+                  {currentPosition}
+                </p>
               </div>
             </>
           )}
