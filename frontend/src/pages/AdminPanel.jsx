@@ -1,6 +1,7 @@
 import { useState, useEffect, use } from "react";
 import { queueAPI } from "../services/api.js";
 import { getSocket, joinQueue, leaveQueue } from "../services/socketService.js";
+import Sidebar from "../components/Sidebar.jsx";
 
 export default function AdminPanel() {
   const [selectedEstablishment, setSelectedEstablishment] = useState("");
@@ -137,8 +138,9 @@ export default function AdminPanel() {
   const nameSelected = establishments.find((est) => est.id === selectedEstablishment);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-50">
+      <Sidebar />
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Seleção de Estabelecimento */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <label className="block text-gray-700 font-semibold mb-2">
