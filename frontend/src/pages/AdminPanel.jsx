@@ -139,7 +139,7 @@ export default function AdminPanel() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Sidebar />
+      {/* <Sidebar selectedEstablishment={nameSelected}/> */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Seleção de Estabelecimento */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
