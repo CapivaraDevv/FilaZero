@@ -2,9 +2,7 @@
 
 import { emitQueueUpdate, emitQueueCalled, emitQueueServed } from './socketService.js';
 import QueueEntry from '../models/QueueEntry.js';
-
-
-const QRCode = require('qrcode');
+import QRCode from 'qrcode'
 
 class QueueService {
   constructor() {
@@ -12,9 +10,9 @@ class QueueService {
     
   }
 
-  async generateQRCode(entryId, establishmentId) {
+  async generateQRCode(establishmentId) {
     try {
-      const trackingUrl = `${process.env.FRONTEND_URL}?establishment=${establishmentId}`;
+      const trackingUrl = `${process.env.FRONTEND_URL}/fila/${establishmentId}`;
 
       const qrCodeDataUrl = await QRCode.toDataURL(trackingUrl, {
         errorCorrectionLevel: 'H',
@@ -271,4 +269,4 @@ class QueueService {
 }
 
 // Singleton - uma única instância do serviço
-module.exports = new QueueService();
+export default new QueueService();

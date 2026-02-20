@@ -5,6 +5,7 @@ import {
   getAllEntries,
   callNext,
   serveEntry,
+  getEstablishmentQRCode,
 } from '../controllers/queueController.js';
 import {
   validateQueueEntry,
@@ -28,5 +29,8 @@ router.post('/:establishmentId/serve/:entryId', validateEntryParams, serveEntry)
 
 // GET /api/queue/:establishmentId - Obter fila (apenas esperando) [DEVE VIR POR ÚLTIMO]
 router.get('/:establishmentId', validateEstablishmentId, getQueue);
+
+// GET /qrcode/:establishmentId - Obter QRCode
+router.get('/qrcode/:establishmentId', getEstablishmentQRCode);
 
 export default router;

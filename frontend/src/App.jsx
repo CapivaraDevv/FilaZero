@@ -12,7 +12,7 @@ function App() {
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/fila" element={<ClientQueue />} />
+        <Route path="/fila/:id" element={<ClientQueue />} />
         <Route path="/acompanhar/:entryId" element={<QueueTracking />} />
         <Route path="/admin" element={<AdminPanel />} />
       </Routes>

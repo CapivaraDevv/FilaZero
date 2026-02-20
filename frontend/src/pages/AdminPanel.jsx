@@ -1,7 +1,10 @@
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { queueAPI } from "../services/api.js";
 import { getSocket, joinQueue, leaveQueue } from "../services/socketService.js";
 import Sidebar from "../components/Sidebar.jsx";
+
+
+
 
 export default function AdminPanel() {
   const [selectedEstablishment, setSelectedEstablishment] = useState("");
@@ -14,6 +17,7 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [qrCode, setQrCode] = useState(null);
 
   const establishments = [
     { id: "banco-central", name: "Banco Central" },
@@ -43,16 +47,31 @@ export default function AdminPanel() {
     }
   };
 
+
+  // Buscar QRCode no backend
+  const fetchQRCode = async (id) => {
+  try {
+    const response = await fetch(`http://localhost:3001/qrcode/${id}`);
+    const data = await response.json();
+    setQrCode(data.data);
+  } catch (error) {
+    console.error("Erro ao buscar QR Code:", error);
+  }
+};
+
   // Configurar WebSocket quando estabelecimento mudar
   useEffect(() => {
     if (!selectedEstablishment) {
       setQueue([]);
       setStats({ totalWaiting: 0, totalServed: 0, averageTime: 0 });
+      setQrCode(null);
       return;
     }
 
     // Buscar dados iniciais
     fetchQueueData();
+
+    fetchQRCode(selectedEstablishment);
 
     // Conectar ao WebSocket
     const socket = getSocket();
@@ -187,6 +206,12 @@ export default function AdminPanel() {
 
         {selectedEstablishment && (
           <>
+            {qrCode && (
+              <div>
+                  <img src={qrCode} alt="QR Code" />
+                  <a href={qrCode} download="qrcode.png">Baixar QR</a>
+              </div>
+            )}
             {/* Cards de Estatísticas */}
             <div className="grid md:grid-cols-3 gap-6 mb-8">
               <div className="bg-white rounded-lg shadow p-6">

@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { queueAPI } from "../services/api.js";
 import { motion } from "motion/react";
+
+
 
 const container = {
   hidden: {},
@@ -20,7 +22,7 @@ const item = {
   visible: {
     opacity: 1,
     x: 0,
-    trasition: {
+    transition: {
       duration: 0.8,
       ease: "easeInOut",
     },
@@ -45,6 +47,8 @@ export default function ClientQueue() {
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
   const [entryId, setEntryId] = useState(null);
+
+  const { id } = useParams();
 
   const handleSubmit = async (e) => {
     e.preventDefault();

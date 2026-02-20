@@ -136,4 +136,22 @@ export const serveEntry = async (req, res) => {
   }
 };
 
-module.exports = { addToQueue, getQueue, getAllEntries, callNext, serveEntry}
+// Gerar qrCode
+export const getEstablishmentQRCode = async (req, res) => {
+  try{
+    const { establishmentId } = req.params;
+
+    const qrCode = await queueService.generateQRCode(establishmentId);
+
+    res.json({
+      success: true,
+      data: qrCode
+    });
+
+  } catch (error) {
+    res.stauts(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
