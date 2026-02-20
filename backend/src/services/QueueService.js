@@ -3,55 +3,63 @@
 import { emitQueueUpdate, emitQueueCalled, emitQueueServed } from './socketService.js';
 import QueueEntry from '../models/QueueEntry.js';
 
+
+const QRCode = require('qrcode');
+
 class QueueService {
   constructor() {
   
     
   }
 
+  async generateQRCode(entryId, establishmentId) {
+    try {
+      const trackingUrl = `${process.env.FRONTEND_URL}?establishment=${establishmentId}`;
+
+      const qrCodeDataUrl = await QRCode.toDataURL(trackingUrl, {
+        errorCorrectionLevel: 'H',
+        type: 'image/png',
+        quality: 0.95,
+        margin: 1,
+        width: 300
+      });
+
+      return qrCodeDataUrl;
+    } catch (error) {
+      console.error("Erro ao gerar QR Code:", error);
+      return null;
+    }
+  }
+
   // Adicionar pessoa na fila
   async addToQueue(establishmentId, name, phone) {
-    // Contar quantos estão esperando para calcular a posição
-    const waitingCount = await QueueEntry.countDocuments({
-      establishmentId,
-      status: 'waiting'
-    });
-    
-    const position = waitingCount + 1;
+    try {
+      // Buscar última posição
+      const lastEntry = await QueueEntry.findOne({ establishmentId, status: 'waiting' })
+        .sort({ position: -1 });
+      
+      const position = (lastEntry?.position || 0) + 1;
 
-    // Criar nova entrada no banco
-    const entry = await QueueEntry.create({
-      name: name.trim(),
-      phone: phone.trim(),
-      establishmentId,
-      position,
-      status: 'waiting'
-      // createdAt e _id são criados automaticamente
-    });
-    
-    // Converter para objeto simples (com id em vez de _id)
-    const entryData = {
-      id: entry._id.toString(),
-      name: entry.name,
-      phone: entry.phone,
-      establishmentId: entry.establishmentId,
-      position: entry.position,
-      status: entry.status,
-      createdAt: entry.createdAt,
-      calledAt: entry.calledAt,
-      servedAt: entry.servedAt
-    };
-    
-    // Emitir evento WebSocket de atualização da fila
-    const queue = await this.getQueue(establishmentId);
-    const stats = await this.getStats(establishmentId);
-    emitQueueUpdate(establishmentId, {
-      queue,
-      stats,
-      newEntry: entryData,
-    });
-    
-    return entryData;
+      // Criar entrada
+      const entry = new QueueEntry({
+        establishmentId,
+        name,
+        phone,
+        position,
+        status: 'waiting'
+      });
+
+      await entry.save();
+
+      // ✅ NOVO: Gerar QR Code para a entrada
+      const qrCode = await this.generateQRCode(entry._id.toString(), establishmentId);
+      entry.qrCode = qrCode;
+      await entry.save();
+
+      return entry;
+    } catch (error) {
+      throw new Error(`Erro ao adicionar à fila: ${error.message}`);
+    }
   }
 
   // Obter fila de um estabelecimento (apenas esperando)
@@ -263,4 +271,4 @@ class QueueService {
 }
 
 // Singleton - uma única instância do serviço
-export default new QueueService();
+module.exports = new QueueService();

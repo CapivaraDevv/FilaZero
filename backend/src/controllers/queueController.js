@@ -5,15 +5,34 @@ export const addToQueue = async (req, res) => {
   try {
     const { establishmentId, name, phone } = req.body;
 
+    // Validações
+    if(!establishmentId || !name || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Campos obrigatórios não preenchidos'
+      });
+    }
+    
     const entry = await queueService.addToQueue(establishmentId, name, phone);
     res.status(201).json({
       success: true,
-      data: entry,
-      message: 'Você foi adicionado à fila!',
+      data: {
+        id: entry._id,
+        name: entry.name,
+        phone: entry.phone,
+        position: entry.position,
+        status: entry.status,
+        qrCode: entry.qrCode, // ✅ Dados do QR Code em base64
+        createdAt: entry.createdAt
+      },
+      message: 'Você foi adicionado à fila com sucesso!',
     });
+
+    const socket = req.app.get('io');
+    socket.io(establishmentId).emit('queue:update', { queue: entry});
   } catch (error) {
     res.status(500).json({
-      error: 'Erro ao adicionar à fila',
+      success: false,
       message: error.message,
     });
   }
@@ -116,3 +135,5 @@ export const serveEntry = async (req, res) => {
     });
   }
 };
+
+module.exports = { addToQueue, getQueue, getAllEntries, callNext, serveEntry}
