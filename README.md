@@ -79,6 +79,7 @@ cd frontend && npm install && npm run dev
 | **GET** | `/queue/:establishmentId/all` | Obter todas as entradas (admin) |
 | **POST** | `/queue/:establishmentId/call` | Chamar próximo |
 | **POST** | `/queue/:establishmentId/serve/:entryId` | Finalizar atendimento |
+| **GET** | `/queue/qrcode/:establishmentId` | Obter QR Code (base64) |
 
 ### Exemplo: Adicionar à Fila
 
