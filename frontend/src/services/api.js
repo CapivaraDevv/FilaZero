@@ -58,4 +58,9 @@ export const queueAPI = {
       method: 'POST',
     });
   },
+
+  // Obter QR Code de um estabelecimento (base64)
+  getQRCode: async (establishmentId) => {
+    return request(`/queue/qrcode/${establishmentId}`);
+  },
 };
