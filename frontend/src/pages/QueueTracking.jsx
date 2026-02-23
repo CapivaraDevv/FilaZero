@@ -25,6 +25,15 @@ export default function QueueTracking() {
         const storedEntry = localStorage.getItem(`queue_entry_${entryId}`);
         if (storedEntry) {
           const entry = JSON.parse(storedEntry);
+          // entry must include establishmentId to join the socket room
+          if (!entry.establishmentId) {
+            setError(
+              "Dados da entrada incompletos (falta establishmentId). Entre na fila novamente."
+            );
+            setLoading(false);
+            return;
+          }
+
           setQueueEntry(entry);
           setCurrentPosition(entry.position);
           setIsCalled(entry.status === "called");
@@ -184,7 +193,7 @@ export default function QueueTracking() {
         <div className="bg-white p-8 rounded-lg shadow text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <button
-            onClick={() => navigate("/fila")}
+            onClick={() => navigate("/fila/id:")}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg"
           >
             Voltar
