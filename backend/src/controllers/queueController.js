@@ -1,4 +1,5 @@
 import queueService from '../services/QueueService.js';
+import { emitQueueUpdate } from '../services/socketService.js';
 
 // Adicionar pessoa na fila
 export const addToQueue = async (req, res) => {
@@ -18,6 +19,7 @@ export const addToQueue = async (req, res) => {
       success: true,
       data: {
         id: entry._id,
+        establishmentId: entry.establishmentId, // send back the est ID so client can join socket room
         name: entry.name,
         phone: entry.phone,
         position: entry.position,
@@ -28,8 +30,16 @@ export const addToQueue = async (req, res) => {
       message: 'Você foi adicionado à fila com sucesso!',
     });
 
-    const socket = req.app.get('io');
-    socket.io(establishmentId).emit('queue:update', { queue: entry});
+    // broadcast via socket helper so frontends can react when alguém entra na fila
+    emitQueueUpdate(establishmentId, { newEntry: {
+      id: entry._id,
+      establishmentId: entry.establishmentId,
+      name: entry.name,
+      phone: entry.phone,
+      position: entry.position,
+      status: entry.status,
+      createdAt: entry.createdAt
+    }});
   } catch (error) {
     res.status(500).json({
       success: false,
