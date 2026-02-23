@@ -81,7 +81,15 @@ export default function ClientQueue() {
       setEntryId(response.data.id);
 
       // Salvar entrada no localStorage para a página de acompanhamento
-      localStorage.setItem(`queue_entry_${response.data.id}`, JSON.stringify(response.data));
+      // garantir que o estabelecimento esteja presente (API foi atualizada para retornar)
+      const entryToStore = {
+        ...response.data,
+        establishmentId: response.data.establishmentId || establishmentId,
+      };
+      localStorage.setItem(
+        `queue_entry_${response.data.id}`,
+        JSON.stringify(entryToStore)
+      );
 
       // Limpar formulário
       setFormData({
