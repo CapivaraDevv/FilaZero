@@ -18,6 +18,10 @@ const router = express.Router();
 // POST /api/queue - Adicionar à fila
 router.post('/', validateQueueEntry, addToQueue);
 
+// Rota QRCode precisa vir **antes** de qualquer rota com parâmetro genérico
+// para não ser confundida com establishmentId = 'qrcode'.
+router.get('/qrcode/:establishmentId', getEstablishmentQRCode);
+
 // GET /api/queue/:establishmentId/all - Obter todas as entradas (admin) [DEVE VIR ANTES de /:establishmentId]
 router.get('/:establishmentId/all', validateEstablishmentId, getAllEntries);
 
@@ -29,8 +33,5 @@ router.post('/:establishmentId/serve/:entryId', validateEntryParams, serveEntry)
 
 // GET /api/queue/:establishmentId - Obter fila (apenas esperando) [DEVE VIR POR ÚLTIMO]
 router.get('/:establishmentId', validateEstablishmentId, getQueue);
-
-// GET /qrcode/:establishmentId - Obter QRCode
-router.get('/qrcode/:establishmentId', getEstablishmentQRCode);
 
 export default router;
