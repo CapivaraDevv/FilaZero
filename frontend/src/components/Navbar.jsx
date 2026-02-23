@@ -19,7 +19,7 @@ export default function Navbar() {
 
   const navLinks = [
     { path: '/', label: 'Home' },
-    { path: '/fila', label: 'Entrar na fila' },
+    { path: '/fila/id:', label: 'Entrar na fila' },
     { path: '/admin', label: 'Painel Admin' }
   ];
 

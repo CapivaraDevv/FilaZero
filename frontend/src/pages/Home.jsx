@@ -105,7 +105,7 @@ export default function Home() {
               </motion.ul>
 
 
-              <Link to="/fila" className="inline-flex items-center justify-center
+              <Link to="/fila/:id" className="inline-flex items-center justify-center
                       sora-title
                       bg-blue-600 text-white
                       px-6 py-2 rounded-lg
