@@ -8,6 +8,7 @@ import { Server } from 'socket.io';
 import queueRoutes from './routes/queueRoutes.js';
 import { initSocketIO } from './services/socketService.js';
 import { connectDatabase } from './config/database.js';
+import { getEstablishmentQRCode } from './controllers/queueController.js'; // route auxiliar fora de /api/queue
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -35,6 +36,9 @@ app.use(express.json());
 
 // Rotas
 app.use('/api/queue', queueRoutes);
+
+// rota simples para QRCode sem prefixo, facilita acesso direto e evita confusão
+app.get('/qrcode/:establishmentId', getEstablishmentQRCode);
 
 // Rota de health check
 app.get('/api/health', (req, res) => {
