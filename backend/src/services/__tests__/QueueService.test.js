@@ -49,6 +49,9 @@ describe('QueueService', () => {
       expect(result.position).toBe(1); // Primeira pessoa na fila
       expect(result.status).toBe('waiting');
       expect(result.establishmentId).toBe(establishmentId);
+      // QR code deve ser uma string base64 iniciando com data:
+      expect(typeof result.qrCode).toBe('string');
+      expect(result.qrCode.startsWith('data:')).toBe(true);
 
       console.log('  ✅ Resultado do addToQueue:', result);
     });
@@ -67,6 +70,8 @@ describe('QueueService', () => {
       // Adicionar terceira pessoa
       const result3 = await QueueService.addToQueue(establishmentId, 'Pedro', '11977777777');
       expect(result3.position).toBe(3);
+      expect(typeof result3.qrCode).toBe('string');
+      expect(result3.qrCode.startsWith('data:')).toBe(true);
 
       console.log('  ✅ Posições calculadas corretamente:', result1.position, result2.position, result3.position);
     });
