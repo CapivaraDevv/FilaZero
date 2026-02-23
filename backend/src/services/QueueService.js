@@ -10,9 +10,10 @@ class QueueService {
     
   }
 
-  async generateQRCode(establishmentId) {
+  // gera uma imagem em base64 apontando para a página de tracking da ENTRADA
+  async generateQRCode(entryId) {
     try {
-      const trackingUrl = `${process.env.FRONTEND_URL}/fila/${establishmentId}`;
+      const trackingUrl = `${process.env.FRONTEND_URL}/fila/${entryId}`; // usar id da entrada
 
       const qrCodeDataUrl = await QRCode.toDataURL(trackingUrl, {
         errorCorrectionLevel: 'H',
@@ -50,7 +51,8 @@ class QueueService {
       await entry.save();
 
       // ✅ NOVO: Gerar QR Code para a entrada
-      const qrCode = await this.generateQRCode(entry._id.toString(), establishmentId);
+      // gerar QR a partir do próprio _id da entrada
+      const qrCode = await this.generateQRCode(entry._id.toString());
       entry.qrCode = qrCode;
       await entry.save();
 
@@ -233,14 +235,10 @@ class QueueService {
       status: 'waiting'
     });
 
-    // Contar quantos foram atendidos hoje
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
+    // Contar quantas entradas já foram atendidas (sem filtro de data)
     const totalServed = await QueueEntry.countDocuments({
       establishmentId,
       status: 'served',
-      servedAt: { $gte: today } // $gte = maior ou igual (hoje ou depois)
     });
 
     // Calcular tempo médio de atendimento (em minutos)
