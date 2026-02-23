@@ -50,14 +50,13 @@ export default function AdminPanel() {
 
   // Buscar QRCode no backend
   const fetchQRCode = async (id) => {
-  try {
-    const response = await fetch(`http://localhost:3001/qrcode/${id}`);
-    const data = await response.json();
-    setQrCode(data.data);
-  } catch (error) {
-    console.error("Erro ao buscar QR Code:", error);
-  }
-};
+    try {
+      const response = await queueAPI.getQRCode(id);
+      setQrCode(response.data);
+    } catch (error) {
+      console.error("Erro ao buscar QR Code:", error);
+    }
+  };
 
   // Configurar WebSocket quando estabelecimento mudar
   useEffect(() => {
