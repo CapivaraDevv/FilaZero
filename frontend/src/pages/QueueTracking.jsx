@@ -204,18 +204,22 @@ export default function QueueTracking() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
+    <div className="min-h-screen bg-slate-900 flex justify-center px-6">
+      <div className="absolute inset-0 bg-blue-600/5 blur-3xl pointer-events-none" />
+      <div className="max-w-2xl mx-auto">
         <div
-          className={`rounded-2xl shadow-xl p-10 bg-white ${
+          className={` w-full max-w-2xl rounded-3xl border 
+            bg-slate-800/60 backdrop-blur-xl
+              shadow-2xl transition-all duration-500 
+          ${
             isCalled
-              ? "bg-yellow-100 border-yellow-500"
-              : "bg-white border-gray-200"
+              ? "border-blue-500 shadow-blue-500/20"
+              : "border-slate-700"
           }`}
         >
           {isCalled ? (
             <div className="text-center">
-              <h1 className="sora-title text-5xl font-bold text-black mb-4">
+              <h1 className="sora-title text-5xl font-bold text-blue-500 mb-4">
                 SUA VEZ CHEGOU!
               </h1>
               <p className="inter-text text-xl text-black">
@@ -224,17 +228,17 @@ export default function QueueTracking() {
               <h1 className="text-3xl font-bold mb-6">
                 Acompanhamento da Fila
               </h1>
-              <p className="text-6xl font-bold text-[#000000]">
+              <p className="text-[160px] font-extrabold text-blue-500 leading-none drop-shadow-[0_0_30px_rgba(59,130,246,0.5)]">
                   {currentPosition}
                 </p>
             </div>
           ) : (
             <>
               
-              <div className="bg-blue-50 rounded-lg p-6 text-center">
-                <h1 className="sora-title text-4xl">Aguarde até ser chamado</h1>
-                <h2 className="inter-text text-2xl">Posição atual:</h2>
-                <p className="">
+              <div className="rounded-lg mt-3 p-8 text-center space-y-3">
+                <h1 className="sora-title text-4xl font-semibold text-white">Aguarde até ser chamado</h1>
+                <h2 className="inter-text text-slate-400 mt-6 text-xl">Posição atual</h2>
+                <p className="sora-title text-[160px] font-extrabold text-white leading-none">
                   {currentPosition}
                 </p>
               </div>
