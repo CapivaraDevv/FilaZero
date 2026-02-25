@@ -13,8 +13,9 @@ const queueEntrySchema = new mongoose.Schema({
   },
   qrCode: {type: String, default: null},
   createdAt: { type: Date, default: Date.now},
-  updatedAt: { type: Date, default: Date.now}
-
+  updatedAt: { type: Date, default: Date.now},
+  calledAt: { type: Date },
+  servedAt: { type: Date }
 });
 
 

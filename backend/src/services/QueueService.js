@@ -245,8 +245,8 @@ class QueueService {
     const servedEntries = await QueueEntry.find({
       establishmentId,
       status: 'served',
-      calledAt: { $exists: true },
-      servedAt: { $exists: true }
+      calledAt: { $ne: null },
+      servedAt: { $ne: null }
     });
 
     let averageTime = 0;
