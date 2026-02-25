@@ -157,7 +157,7 @@ export default function AdminPanel() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Sidebar selectedEstablishment={nameSelected}/>
+      {/* <Sidebar selectedEstablishment={nameSelected}/> */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Seleção de Estabelecimento */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -179,7 +179,7 @@ export default function AdminPanel() {
         </div>
 
         {nameSelected && (
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4 ml-2">
             {nameSelected.name}
           </h1>
         )}
@@ -206,9 +206,10 @@ export default function AdminPanel() {
         {selectedEstablishment && (
           <>
             {qrCode && (
-              <div>
-                  <img src={qrCode} alt="QR Code" />
-                  <a href={qrCode} download="qrcode.png">Baixar QR</a>
+              <div className="mb-4">
+                  <a href={qrCode} download="qrcode.png">
+                    <img src={qrCode} alt="QR Code" />
+                  </a>
               </div>
             )}
             {/* Cards de Estatísticas */}
